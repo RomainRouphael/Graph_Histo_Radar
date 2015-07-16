@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<link rel="stylesheet" type="text/css" href="../src/radar-chart.min.css">
+
+<head>
+
+<title>ICCF Dashboard</title>
+
+	<script type="text/javascript" src="../src/d3.js"></script>
+	<script type="text/javascript" src="../src/radar-chart.min.js"></script>
+	
+	<style>
+
+.axis path,
+.axis line{
+	fill: none;
+	stroke: black;
+	shape-rendering: crispEdges;
+}
+.axis text {
+	font-family: sans-serif;
+	font-size: 11px;
+}
+
+
+body {
+      padding: 20px;
+    }
+    .radar-chart .area {
+      fill-opacity: 0.7;
+    }
+    .radar-chart.focus .area {
+      fill-opacity: 0.3;
+    }
+    .radar-chart.focus .area.focused {
+      fill-opacity: 0.9;
+    }
+    .area, .circle {
+      fill: #FFD700;
+      stroke: none;
+    }
+    .area, .circle {
+      fill: #ADD8E6;
+      stroke: none;
+    }
+
+	</style>
+
+</head>
+
+<body>
+
+	<script type="text/javascript">
+
+
+d3.csv("ICCFBarChart2.csv", function(csv) {
+
+var data = []
+
+csv.forEach(function(d,i){
+
+	data.push({
+	score: parseFloat(d.part1) + parseFloat(d.part2) + parseFloat(d.part3) + parseFloat(d.part4) + parseFloat(d.part5),
+	part1: parseFloat(d.part1),
+	part2: parseFloat(d.part2),
+	part3: parseFloat(d.part3),
+	part4: parseFloat(d.part4),
+	part5: parseFloat(d.part5)
+	})
+
+});
+
+//csv.sort(function(a, b) {return b.score - a.score; });
+
+ var AvgPart1 = 0;
+ var AvgPart2 = 0;
+ var AvgPart3 = 0;
+ var AvgPart4 = 0;
+ var AvgPart5 = 0;
+
+ for (j = 0; j < data.length; j++) {
+ 	AvgPart1 += parseFloat(data[j].part1);
+	AvgPart2 += parseFloat(data[j].part2);
+	AvgPart3 += parseFloat(data[j].part3);
+	AvgPart4 += parseFloat(data[j].part4);
+	AvgPart5 += parseFloat(data[j].part5);
+}
+
+AvgPart1 = AvgPart1/data.length;
+AvgPart2 = AvgPart2/data.length;
+AvgPart3 = AvgPart3/data.length;
+AvgPart4 = AvgPart4/data.length;
+AvgPart5 = AvgPart5/data.length;
+
+
+  	var dataAvg = [];
+
+	dataAvg.push({
+	classname: 'Average',
+	axes: [
+	{axis: "I: FINANCIAL ANALYSIS AND FORECASTING", value: AvgPart1},
+	{axis: "II: INVESTORS AND MARKETS", value: AvgPart2},
+	{axis: "III: VALUE", value: AvgPart3}, 
+	{axis: "IV: CORPORATE FINANCIAL POLICIES", value: AvgPart4}, 
+	{axis: "V: FINANCIAL MANAGEMENT", value: AvgPart5}, 
+	]}
+	);
+
+
+
+var margin = {top:40, left: 40, right: 40, bottom: 40},
+	w = 960 - margin.left - margin.right,
+	h = 500 - margin.top - margin.bottom;
+	
+
+var xScale = d3.scale.linear()
+					  .domain([0,data.length])
+					  .range([0, w/2])
+
+
+var yScale = d3.scale.linear()
+					   .domain([0,d3.max(data,function(d) {return d.score;})])
+					   .range([h, 0]);
+
+var xAxis = d3.svg.axis()
+					.scale(xScale)
+					.orient("bottom")
+					.ticks(8)
+
+var yAxis = d3.svg.axis()
+					.scale(yScale)
+					.orient("left")
+					.ticks(8);
+
+var svg = d3.select("body").append("svg")
+							.attr("width",w/2 + margin.left + margin.right)
+							.attr("height",h + margin.top + margin.bottom)
+						   .append("g")
+						    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+	svg.selectAll("rect")
+		.data(data)
+		.enter()
+		.append("rect")
+		.attr("x", function(d,i) {return xScale(i);})
+		.attr("y", function(d,i) {return yScale(d.score);})
+		.attr("width", function(d) {return ((w/2)/data.length - 1);})
+		.attr("height",function(d) {return h - yScale(d.score) ;})
+		.attr("fill", "steelblue")
+		.on("mouseover", function(d) {radar(this,d)})
+		.on("mouseout", function(d) {removeradar(this,d)});
+  
+	svg.append("g")
+		.attr("class","axis")
+		.attr("transform", "translate(0," + yScale.range()[0] + ")")
+		.call(xAxis);
+
+	svg.append("g")
+		.attr("class","axis")
+		.call(yAxis);
+
+	svg.append("g")
+      .attr("class", "axis")
+      .call(yAxis)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("ICCF score");
+
+
+	var chart = RadarChart.chart();
+	chart.config({w: w / 2, h: h});
+	var cfg = chart.config(); // retrieve default config
+	var svgRadar = d3.select("body").append("svg")
+					.attr("id","radar")
+  					.attr('width', w/2 + margin.left)
+  					.attr('height', h + margin.top);
+
+  	svgRadar.classed("single", 1).datum(dataAvg).call(chart);
+
+  	var dataRadar = [];
+	
+	function radar(e,d) {
+	
+	dataRadar = dataAvg;
+
+	d3.select(e).attr("fill","green")
+	
+	dataRadar.push({
+	classname: 'Individual',
+	axes: [
+	{axis: "I: FINANCIAL ANALYSIS AND FORECASTING", value: parseFloat(d.part1)},
+	{axis: "II: INVESTORS AND MARKETS", value: parseFloat(d.part2)},
+	{axis: "III: VALUE", value: parseFloat(d.part3)}, 
+	{axis: "IV: CORPORATE FINANCIAL POLICIES", value: parseFloat(d.part4)}, 
+	{axis: "V: FINANCIAL MANAGEMENT", value: parseFloat(d.part5)}, 
+	]}
+	)
+	 
+	svgRadar.classed("single", 1).datum(dataRadar).call(chart);
+	
+		}
+
+	var k =1;
+
+	function removeradar(e,d) {
+		
+	d3.select(e).attr("fill","steelblue");
+	dataRadar[k] = [];
+	k = k+1;
+	svgRadar.classed("single", 1).datum(dataAvg).call(chart);
+
+	}
+
+});
+
+
+	</script>
+
+
+
+</body>
